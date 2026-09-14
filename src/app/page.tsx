@@ -1,69 +1,56 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, ShieldCheck, Truck, CreditCard } from "lucide-react";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div>
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+        <div className="container mx-auto px-4 py-24 md:py-32 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">
+            Tecnología de vanguardia <br /> para tu negocio y hogar
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            Laptops, servidores, networking y electrónica con stock real. 
+            Precios competitivos, garantía oficial y envío a todo Ecuador.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link 
+              href="/productos" 
+              className="inline-flex items-center justify-center px-8 py-3 text-lg font-medium bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition shadow-lg"
+            >
+              Ver Catálogo <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+            <Link 
+              href="/financiamiento" 
+              className="inline-flex items-center justify-center px-8 py-3 text-lg font-medium border-2 border-white text-white rounded-lg hover:bg-white/10 transition"
+            >
+              Solicitar Financiamiento
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Features */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm text-center border border-gray-100">
+            <Truck className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Envío Nacional</h3>
+            <p className="text-gray-600">Despacho rápido a Quito, Guayaquil, Cuenca y todo el país.</p>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm text-center border border-gray-100">
+            <ShieldCheck className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Garantía Oficial</h3>
+            <p className="text-gray-600">Productos 100% originales con garantía de fabricante y soporte local.</p>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm text-center border border-gray-100">
+            <CreditCard className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Facilidades de Pago</h3>
+            <p className="text-gray-600">Cotizaciones institucionales y opciones de financiamiento para empresas.</p>
+          </div>
         </div>
-      </main>
+      </section>
     </div>
   );
 }
