@@ -150,4 +150,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       </section>
     </div>
   );
+<Link
+  href={`/financiamiento?product=${product.id}`}
+  className="w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium border border-blue-600 text-blue-600 hover:bg-blue-50 transition"
+>
+  <CreditCard className="h-5 w-5" />
+  <span>Solicitar Financiamiento</span>
+</Link>
 }
