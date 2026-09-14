@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { Package, CheckCircle2, XCircle, MessageCircle } from "lucide-react";
@@ -76,8 +77,21 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       </nav>
 
       <div className="grid md:grid-cols-2 gap-10">
-        <div className="bg-gray-100 rounded-xl aspect-square flex items-center justify-center text-gray-300">
-          <Package className="h-32 w-32" />
+        {/* AQUÍ está el cambio: imagen real si existe, placeholder gris si no */}
+        <div className="bg-gray-100 rounded-xl aspect-square relative overflow-hidden">
+          {product.image_urls?.[0] ? (
+            <Image
+              src={product.image_urls[0]}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-contain p-4"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-gray-300">
+              <Package className="h-32 w-32" />
+            </div>
+          )}
         </div>
 
         <div>
@@ -150,11 +164,4 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       </section>
     </div>
   );
-<Link
-  href={`/financiamiento?product=${product.id}`}
-  className="w-full flex items-center justify-center space-x-2 py-3 rounded-lg font-medium border border-blue-600 text-blue-600 hover:bg-blue-50 transition"
->
-  <CreditCard className="h-5 w-5" />
-  <span>Solicitar Financiamiento</span>
-</Link>
 }

@@ -19,7 +19,7 @@ export default async function ProductosPage({
 
   let listQuery = sb
     .from("products")
-    .select("id, sku, name, slug, price, stock_status, categories(name, slug)", { count: "exact" })
+    .select("id, sku, name, slug, price, stock_status, image_urls, categories(name, slug)", { count: "exact" })
     .eq("is_published", true);
 
   if (cat) listQuery = listQuery.eq("categories.slug", cat);
@@ -93,6 +93,7 @@ export default async function ProductosPage({
                 price: Number(p.price),
                 stock_status: p.stock_status,
                 category_name: p.categories?.name ?? null,
+                image_url: p.image_urls?.[0] ?? null,
               }}
             />
           ))}

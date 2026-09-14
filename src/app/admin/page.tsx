@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileSpreadsheet, CreditCard } from "lucide-react";
+import { FileSpreadsheet, CreditCard, Image as ImageIcon } from "lucide-react";
 
 const modules = [
   {
@@ -13,6 +13,12 @@ const modules = [
     title: "Solicitudes de Financiamiento",
     desc: "Revisa y gestiona solicitudes de crédito con datos cifrados (LOPDP).",
     Icon: CreditCard,
+  },
+  {
+    href: "/admin/imagenes",
+    title: "Imágenes de Productos",
+    desc: "Adjunta fotos referenciales buscando por SKU o nombre.",
+    Icon: ImageIcon,
   },
 ];
 
