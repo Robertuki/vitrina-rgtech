@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileSpreadsheet, CreditCard, Image as ImageIcon, Settings, Sparkles } from "lucide-react";
+import { FileSpreadsheet, CreditCard, Image as ImageIcon, Settings, Sparkles, Search } from "lucide-react";
 
 const modules = [
   {
@@ -32,6 +32,12 @@ const modules = [
     desc: "Busca y descarga fotos de Google por producto, en lotes de 25/100.",
     Icon: Sparkles,
   },
+  {
+  href: "/admin/buscar-imagenes-google",
+  title: "Búsqueda de Imágenes (Google CSE)",
+  desc: "Busca imágenes específicas de productos en Amazon, eBay, Mercado Libre y AliExpress.",
+  Icon: Search, // importar Search de lucide-react
+},
 ];
 
 export default function AdminHome() {
