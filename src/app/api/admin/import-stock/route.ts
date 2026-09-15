@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import * as XLSX from "xlsx";
 import crypto from "crypto";
+import { z } from "zod";
 import { mapWorkbook, MappedProduct } from "@/lib/excel-mapper";
 
 export const maxDuration = 60;
@@ -30,6 +31,20 @@ function decidePublished(p: MappedProduct): boolean {
   return PUBLISH_BASE;
 }
 
+// ✅ NUEVO: Schema de validación Zod
+const ProductPayloadSchema = z.object({
+  sku: z.string().min(1, "SKU requerido"),
+  name: z.string().min(1, "Nombre requerido"),
+  slug: z.string().min(1),
+  supplier_cost: z.number().min(0, "Costo no puede ser negativo"), // min(0) para permitir bonos de $0.00
+  category_id: z.string().uuid().nullable(),
+  stock_status: z.enum(["in_stock", "on_demand", "out_of_stock"]),
+  is_published: z.boolean(),
+  specifications: z.record(z.string(), z.any()).optional(),
+  last_import_id: z.string().uuid(),
+  // NOTA: No incluimos 'price' ni 'profit_margin_percentage' aquí porque la DB los calcula automáticamente
+});
+
 export async function POST(req: NextRequest) {
   try {
     const cookieStore = await cookies();
@@ -41,6 +56,7 @@ export async function POST(req: NextRequest) {
 
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     if (profile?.role !== "admin") return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
 
@@ -50,6 +66,7 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileHash = crypto.createHash("sha256").update(buffer).digest("hex");
+    
     const { data: dup } = await supabase.from("stock_imports").select("id, created_at").eq("file_hash", fileHash).maybeSingle();
     if (dup) return NextResponse.json({ error: `Este archivo ya se importó el ${new Date(dup.created_at).toLocaleDateString()}` }, { status: 409 });
 
@@ -65,6 +82,7 @@ export async function POST(req: NextRequest) {
 
     const slugs = Array.from(new Set(products.map((p) => p.category_slug)));
     await supabase.from("categories").upsert(slugs.map((s) => ({ slug: s, name: prettyName(s) })), { onConflict: "slug" });
+    
     const { data: cats } = await supabase.from("categories").select("id, slug").in("slug", slugs);
     const catMap = new Map((cats || []).map((c) => [c.slug, c.id]));
 
@@ -77,23 +95,35 @@ export async function POST(req: NextRequest) {
       slug: `${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "").slice(0, 200)}-${p.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       supplier_cost: p.supplier_cost,
       category_id: catMap.get(p.category_slug) || null,
-      stock_status: "in_stock",
+      stock_status: "in_stock" as const,
       is_published: decidePublished(p),
       specifications: {
-        source_sheet: p.source_sheet, role: p.role,
-        promo_channel: p.promo_channel || null, promo_comment: p.promo_comment || null,
-        brand_line: p.brand_line || null, imported_at: new Date().toISOString(),
+        source_sheet: p.source_sheet, 
+        role: p.role,
+        promo_channel: p.promo_channel || null, 
+        promo_comment: p.promo_comment || null,
+        brand_line: p.brand_line || null, 
+        imported_at: new Date().toISOString(),
       },
       last_import_id: importRecord.id,
     }));
 
     const errors: { row: number; reason: string }[] = [];
+    
+    // ✅ NUEVO: Bucle de upsert con validación Zod
     for (const batch of chunk(payload, 200)) {
-      const { error } = await supabase.from("products").upsert(batch, { onConflict: "sku" });
-      if (error) errors.push({ row: 0, reason: error.message });
+      try {
+        // Validar cada item antes de enviar a la DB
+        const validatedBatch = batch.map((p) => ProductPayloadSchema.parse(p));
+        const { error } = await supabase.from("products").upsert(validatedBatch, { onConflict: "sku" });
+        if (error) errors.push({ row: 0, reason: error.message });
+      } catch (e: any) {
+        errors.push({ row: 0, reason: `Validación: ${e.message}` });
+      }
     }
 
     const published = payload.filter((p) => p.is_published).length;
+    
     await supabase.from("stock_imports").update({
       total_items_created: payload.length - existingSet.size,
       total_items_updated: existingSet.size,
@@ -102,8 +132,15 @@ export async function POST(req: NextRequest) {
     }).eq("id", importRecord.id);
 
     return NextResponse.json({
-      success: true, importId: importRecord.id,
-      summary: { mapped: payload.length, published, hidden: payload.length - published, created: payload.length - existingSet.size, updated: existingSet.size },
+      success: true, 
+      importId: importRecord.id,
+      summary: { 
+        mapped: payload.length, 
+        published, 
+        hidden: payload.length - published, 
+        created: payload.length - existingSet.size, 
+        updated: existingSet.size 
+      },
       reports,
     });
   } catch (e: any) {

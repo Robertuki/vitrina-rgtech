@@ -1,7 +1,13 @@
 import Link from "next/link";
-import { FileSpreadsheet, CreditCard, Image as ImageIcon } from "lucide-react";
+import { FileSpreadsheet, CreditCard, Image as ImageIcon, Settings, Sparkles } from "lucide-react";
 
 const modules = [
+  {
+    href: "/admin/configuracion-precios",
+    title: "Configuración de Precios",
+    desc: "Edita IVA (15%) y margen (11%) RIMPE. Los precios se recalculan en todo el catálogo.",
+    Icon: Settings,
+  },
   {
     href: "/admin/importar-stock",
     title: "Importación de Stock",
@@ -19,6 +25,12 @@ const modules = [
     title: "Imágenes de Productos",
     desc: "Adjunta fotos referenciales buscando por SKU o nombre.",
     Icon: ImageIcon,
+  },
+  {
+    href: "/admin/imagenes-auto",
+    title: "Imágenes Automáticas",
+    desc: "Busca y descarga fotos de Google por producto, en lotes de 25/100.",
+    Icon: Sparkles,
   },
 ];
 

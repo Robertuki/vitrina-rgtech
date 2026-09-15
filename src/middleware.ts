@@ -8,16 +8,16 @@ export async function middleware(request: NextRequest) {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
-  const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com;
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data: https://*.supabase.co;
-    connect-src 'self' https://*.supabase.co https://api.resend.com;
-    frame-src 'self' https://challenges.cloudflare.com;
-    frame-ancestors 'none';
-  `.replace(/\s{2,}/g, " ").trim();
-  response.headers.set("Content-Security-Policy", cspHeader);
+const isDev = process.env.NODE_ENV === "development";
+const cspHeader = `
+  default-src 'self';
+  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com;
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' blob: data: https://*.supabase.co;
+  connect-src 'self' https://*.supabase.co https://api.resend.com;
+  frame-src 'self' https://challenges.cloudflare.com;
+  frame-ancestors 'none';
+`.replace(/\s{2,}/g, " ").trim();;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
