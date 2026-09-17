@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildImageQuery } from "@/lib/product-etl";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import crypto from "crypto";
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
       try {
         const { data: product } = await supabase
           .from("products")
-          .select("id, sku, name, image_urls")
+          .select("id, sku, name, image_urls, image_query")
           .eq("id", productId)
           .single();
 
@@ -155,10 +156,15 @@ export async function POST(req: NextRequest) {
 
         // BÚSQUEDA: SKU + Nombre
         console.log(`🔍 Buscando imagen para: ${product.sku} ${product.name}`);
-        const imageUrls = await searchProductImageWithGoogle(
-          `${product.sku} ${product.name}`,
-          5
-        );
+                const baseQuery = product.image_query || `${product.sku} ${product.name}`;
+        const imageUrls = await searchProductImageWithGoogle(baseQuery, 5);
+        // ETL perezoso: persiste la consulta limpia linkeada al SKU
+        if (!product.image_query) {
+          await supabase
+            .from("products")
+            .update({ image_query: buildImageQuery(product.name, product.sku) })
+            .eq("id", product.id);
+        }
 
         if (imageUrls.length === 0) {
           results.details.push({

@@ -31,18 +31,18 @@ function decidePublished(p: MappedProduct): boolean {
   return PUBLISH_BASE;
 }
 
-// ✅ NUEVO: Schema de validación Zod
+// ✅ ACTUALIZADO: Se agrega 'price' al schema de validación
 const ProductPayloadSchema = z.object({
   sku: z.string().min(1, "SKU requerido"),
   name: z.string().min(1, "Nombre requerido"),
   slug: z.string().min(1),
-  supplier_cost: z.number().min(0, "Costo no puede ser negativo"), // min(0) para permitir bonos de $0.00
+  supplier_cost: z.number().min(0, "Costo no puede ser negativo"),
+  price: z.number().min(0, "Precio no puede ser negativo"), // <-- NUEVO
   category_id: z.string().uuid().nullable(),
   stock_status: z.enum(["in_stock", "on_demand", "out_of_stock"]),
   is_published: z.boolean(),
   specifications: z.record(z.string(), z.any()).optional(),
   last_import_id: z.string().uuid(),
-  // NOTA: No incluimos 'price' ni 'profit_margin_percentage' aquí porque la DB los calcula automáticamente
 });
 
 export async function POST(req: NextRequest) {
@@ -89,31 +89,50 @@ export async function POST(req: NextRequest) {
     const { data: existing } = await supabase.from("products").select("sku").in("sku", products.map((p) => p.sku));
     const existingSet = new Set((existing || []).map((e) => e.sku));
 
-    const payload = products.map((p) => ({
-      sku: p.sku,
-      name: p.name,
-      slug: `${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "").slice(0, 200)}-${p.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-      supplier_cost: p.supplier_cost,
-      category_id: catMap.get(p.category_slug) || null,
-      stock_status: "in_stock" as const,
-      is_published: decidePublished(p),
-      specifications: {
-        source_sheet: p.source_sheet, 
-        role: p.role,
-        promo_channel: p.promo_channel || null, 
-        promo_comment: p.promo_comment || null,
-        brand_line: p.brand_line || null, 
-        imported_at: new Date().toISOString(),
-      },
-      last_import_id: importRecord.id,
-    }));
+    // ✅ NUEVO: Obtener configuración de precios de la BD
+    const { data: config } = await supabase
+      .from("pricing_config")
+      .select("iva_percentage, profit_margin_percentage")
+      .limit(1)
+      .maybeSingle();
+
+    // Valores por defecto seguros si la tabla está vacía o falla la lectura
+    const iva = config?.iva_percentage ?? 15.0;
+    const margin = config?.profit_margin_percentage ?? 30.0;
+    
+    const ivaMultiplier = 1 + (iva / 100);       // Ej: 1.15
+    const marginMultiplier = 1 + (margin / 100); // Ej: 1.30
+
+    const payload = products.map((p) => {
+      // ✅ NUEVO: Cálculo del precio de venta (Fórmula RIMPE)
+      const calculatedPrice = p.supplier_cost * ivaMultiplier * marginMultiplier;
+      const roundedPrice = Math.round(calculatedPrice * 100) / 100; // Redondeo a 2 decimales
+
+      return {
+        sku: p.sku,
+        name: p.name,
+        slug: `${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "").slice(0, 200)}-${p.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        supplier_cost: p.supplier_cost,
+        price: roundedPrice, // ✅ NUEVO: Se guarda el precio calculado, no el costo
+        category_id: catMap.get(p.category_slug) || null,
+        stock_status: "in_stock" as const,
+        is_published: decidePublished(p),
+        specifications: {
+          source_sheet: p.source_sheet, 
+          role: p.role,
+          promo_channel: p.promo_channel || null, 
+          promo_comment: p.promo_comment || null,
+          brand_line: p.brand_line || null, 
+          imported_at: new Date().toISOString(),
+        },
+        last_import_id: importRecord.id,
+      };
+    });
 
     const errors: { row: number; reason: string }[] = [];
     
-    // ✅ NUEVO: Bucle de upsert con validación Zod
     for (const batch of chunk(payload, 200)) {
       try {
-        // Validar cada item antes de enviar a la DB
         const validatedBatch = batch.map((p) => ProductPayloadSchema.parse(p));
         const { error } = await supabase.from("products").upsert(validatedBatch, { onConflict: "sku" });
         if (error) errors.push({ row: 0, reason: error.message });
